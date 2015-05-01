@@ -67,6 +67,9 @@ class OpenLocationCode
      * To be valid, all characters must be from the Open Location Code character
      * set with at most one separator. The separator can be in any even-numbered
      * position up to the eighth digit.
+     *
+     * @param string $code
+     * @return bool
      */
     public function isValid($code)
     {
@@ -121,6 +124,28 @@ class OpenLocationCode
         return true;
     }
 
+    /**
+     * Determines if a code is a valid short code.
+     * A short Open Location Code is a sequence created by removing four or more
+     * digits from an Open Location Code. It must include a separator
+     * character.
+     *
+     * @param string $code
+     * @return bool
+     */
+    public function isShort($code)
+    {
+        // Check it's valid.
+        if (!$this->isValid($code)) {
+            return false;
+        }
+        // If there are less characters than expected before the SEPARATOR.
+        $firstOccurrence = strpos($code, $this->SEPARATOR_);
+        if (($firstOccurrence >= 0) && ($firstOccurrence < $this->SEPARATOR_POSITION_)) {
+            return true;
+        }
+        return false;
+    }
 }
 
 

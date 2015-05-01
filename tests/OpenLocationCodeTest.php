@@ -6,6 +6,11 @@ use Salavert\OpenLocationCode;
 
 class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
 
+    /**
+     * @var OpenLocationCode $olc
+     */
+    private $olc;
+
     public function setUp() {
         $this->olc = new OpenLocationCode();
     }
@@ -32,6 +37,30 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     public function testIsValidMethodWithInvalidCodes($code)
     {
         $this->assertFalse($this->olc->isValid($code));
+    }
+
+    /**
+     * @dataProvider validShortCodes
+     */
+    public function testIsShortMethodWithValidShortCodes($code)
+    {
+        $this->assertTrue($this->olc->isShort($code));
+    }
+
+    /**
+     * @dataProvider validFullCodes
+     */
+    public function testIsShortMethodWithValidFullCodes($code)
+    {
+        $this->assertFalse($this->olc->isShort($code));
+    }
+
+    /**
+     * @dataProvider invalidCodes
+     */
+    public function testIsShortMethodWithInvalidCodes($code)
+    {
+        $this->assertFalse($this->olc->isShort($code));
     }
 
     public function validShortCodes()
