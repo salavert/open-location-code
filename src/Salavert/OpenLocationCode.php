@@ -73,17 +73,14 @@ class OpenLocationCode
         $firstOccurrence = strpos($code, $this->SEPARATOR_);
         // The separator is required.
         if ($firstOccurrence === false) {
-            echo __LINE__.PHP_EOL;
             return false;
         }
         $lastOccurrence = strrpos($code, $this->SEPARATOR_);
         if ($firstOccurrence != $lastOccurrence) {
-            echo __LINE__.PHP_EOL;
             return false;
         }
         // Is it in an illegal position?
         if (($firstOccurrence > $this->SEPARATOR_POSITION_) || ($firstOccurrence % 2 == 1)) {
-            echo __LINE__.PHP_EOL;
             return false;
         }
         // We can have an even number of padding characters before the separator,
@@ -91,7 +88,6 @@ class OpenLocationCode
         $paddingCharacters = strpos($code, $this->PADDING_CHARACTER_);
         if ($paddingCharacters !== false) {
             if ($paddingCharacters == 0) {
-                echo __LINE__.PHP_EOL;
                 return false;
             }
             // There can only be one group and it must have even length.
@@ -102,13 +98,11 @@ class OpenLocationCode
             }
             // If the code is long enough to end with a separator, make sure it does.
             if (substr($code, -1) != $this->SEPARATOR_) {
-                echo __LINE__.PHP_EOL;
                 return false;
             }
         }
         // If there are characters after the separator, make sure there isn't just one of them (not legal).
         if ((strlen($code) - $firstOccurrence - 1) == 1) {
-            echo __LINE__.PHP_EOL;
             return false;
         }
 

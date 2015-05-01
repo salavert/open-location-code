@@ -13,7 +13,7 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider validShortCodes
      */
-    public function testIsValidWithValidShortCodes($code)
+    public function testIsValidMethodWithValidShortCodes($code)
     {
         $this->assertTrue($this->olc->isValid($code));
     }
@@ -21,9 +21,17 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider validFullCodes
      */
-    public function testIsValidWithValidFullCodes($code)
+    public function testIsValidMethodWithValidFullCodes($code)
     {
         $this->assertTrue($this->olc->isValid($code));
+    }
+
+    /**
+     * @dataProvider invalidCodes
+     */
+    public function testIsValidMethodWithInvalidCodes($code)
+    {
+        $this->assertFalse($this->olc->isValid($code));
     }
 
     public function validShortCodes()
@@ -43,6 +51,19 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
             array('8FWC2345+G6G'),
             array('8fwc2345+'),
             array('8FWCX400+'),
+        );
+    }
+
+    public function invalidCodes()
+    {
+        return array(
+            array('8FWC2345+G'),
+            array('8FWC2_45+G6'),
+            array('8FWC2η45+G6'),
+            array('8FWC2345+G6+'),
+            array('8FWC2300+G6'),
+            array('WC2300+G6g'),
+            array('WC2345+G'),
         );
     }
 
