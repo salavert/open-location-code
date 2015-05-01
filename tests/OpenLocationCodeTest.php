@@ -63,6 +63,30 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
         $this->assertFalse($this->olc->isShort($code));
     }
 
+    /**
+     * @dataProvider validShortCodes
+     */
+    public function testIsFullMethodWithValidShortCodes($code)
+    {
+        $this->assertFalse($this->olc->isFull($code));
+    }
+
+    /**
+     * @dataProvider validFullCodes
+     */
+    public function testIsFullMethodWithValidFullCodes($code)
+    {
+        $this->assertTrue($this->olc->isFull($code));
+    }
+
+    /**
+     * @dataProvider invalidCodes
+     */
+    public function testIsFullMethodWithInvalidCodes($code)
+    {
+        $this->assertFalse($this->olc->isFull($code));
+    }
+
     public function validShortCodes()
     {
         return array(

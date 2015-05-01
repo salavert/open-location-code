@@ -135,7 +135,6 @@ class OpenLocationCode
      */
     public function isShort($code)
     {
-        // Check it's valid.
         if (!$this->isValid($code)) {
             return false;
         }
@@ -145,6 +144,38 @@ class OpenLocationCode
             return true;
         }
         return false;
+    }
+
+    /**
+     * Determines if a code is a valid full Open Location Code.
+     * Not all possible combinations of Open Location Code characters decode to
+     * valid latitude and longitude values. This checks that a code is valid
+     * and also that the latitude and longitude values are legal. If the prefix
+     * character is present, it must be the first character. If the separator
+     * character is present, it must be after four characters.
+     */
+    public function isFull($code)
+    {
+        // If it's short, it's not full.
+        if (!$this->isValid($code) || $this->isShort($code)) {
+            return false;
+        }
+
+        // Work out what the first latitude character indicates for latitude.
+        $firstLatValue = strpos($this->CODE_ALPHABET_, strtoupper($code[0])) * $this->ENCODING_BASE_;
+        if ($firstLatValue >= $this->LATITUDE_MAX_ * 2) {
+            // The code would decode to a latitude of >= 90 degrees.
+            return false;
+        }
+        if (strlen($code) > 1) {
+            // Work out what the first longitude character indicates for longitude.
+            $firstLngValue = strpos($this->CODE_ALPHABET_, strtoupper($code[1])) * $this->ENCODING_BASE_;
+            if ($firstLngValue >= $this->LONGITUDE_MAX_ * 2) {
+                // The code would decode to a longitude of >= 180 degrees.
+                return false;
+            }
+        }
+        return true;
     }
 }
 
