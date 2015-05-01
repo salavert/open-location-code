@@ -16,74 +16,32 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @dataProvider validShortCodes
+     * @dataProvider validFullCodes
      */
-    public function testIsValidMethodWithValidShortCodes($code)
+    public function testValidFullCodes($code)
     {
         $this->assertTrue($this->olc->isValid($code));
-    }
-
-    /**
-     * @dataProvider validFullCodes
-     */
-    public function testIsValidMethodWithValidFullCodes($code)
-    {
-        $this->assertTrue($this->olc->isValid($code));
-    }
-
-    /**
-     * @dataProvider invalidCodes
-     */
-    public function testIsValidMethodWithInvalidCodes($code)
-    {
-        $this->assertFalse($this->olc->isValid($code));
-    }
-
-    /**
-     * @dataProvider validShortCodes
-     */
-    public function testIsShortMethodWithValidShortCodes($code)
-    {
-        $this->assertTrue($this->olc->isShort($code));
-    }
-
-    /**
-     * @dataProvider validFullCodes
-     */
-    public function testIsShortMethodWithValidFullCodes($code)
-    {
         $this->assertFalse($this->olc->isShort($code));
-    }
-
-    /**
-     * @dataProvider invalidCodes
-     */
-    public function testIsShortMethodWithInvalidCodes($code)
-    {
-        $this->assertFalse($this->olc->isShort($code));
-    }
-
-    /**
-     * @dataProvider validShortCodes
-     */
-    public function testIsFullMethodWithValidShortCodes($code)
-    {
-        $this->assertFalse($this->olc->isFull($code));
-    }
-
-    /**
-     * @dataProvider validFullCodes
-     */
-    public function testIsFullMethodWithValidFullCodes($code)
-    {
         $this->assertTrue($this->olc->isFull($code));
     }
 
     /**
+     * @dataProvider validShortCodes
+     */
+    public function testValidShortCodes($code)
+    {
+        $this->assertTrue($this->olc->isValid($code));
+        $this->assertTrue($this->olc->isShort($code));
+        $this->assertFalse($this->olc->isFull($code));
+    }
+
+    /**
      * @dataProvider invalidCodes
      */
-    public function testIsFullMethodWithInvalidCodes($code)
+    public function testInvalidCodes($code)
     {
+        $this->assertFalse($this->olc->isValid($code));
+        $this->assertFalse($this->olc->isShort($code));
         $this->assertFalse($this->olc->isFull($code));
     }
 
