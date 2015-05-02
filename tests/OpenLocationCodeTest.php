@@ -78,9 +78,31 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
-    public function testEncodeFullCode()
+    /**
+     * @dataProvider shortCodes
+     */
+    public function testEncodeShortCodes($fullCode, $latitude, $longitude)
     {
-        $this->assertEquals('9C3W9QCJ+2V', $this->olc->encode(51.3701125,-1.217765625));
+        $this->assertEquals($fullCode, $this->olc->encode($latitude,$longitude));
     }
 
+    public function shortCodes()
+    {
+        # Format: full code, lat, lng
+        return array(
+            array('9C3W9QCJ+2V', 51.3701125, -1.217765625, '+2V'),
+
+            # Adjust so we can't trim by 8 (+/- .000755)
+            array('9C3W9QCJ+8V', 51.3708675, -1.217765625),
+            array('9C3W9Q9J+PV', 51.3693575, -1.217765625),
+            array('9C3W9QCJ+2H', 51.3701125, -1.218520625),
+            array('9C3W9QCM+25', 51.3701125, -1.217010625),
+
+            ## Adjust so we can't trim by 6 (+/- .0151)
+            array('9C3W9QPJ+3V', 51.3852125, -1.217765625),
+            array('9C3W9Q4J+2V', 51.3550125, -1.217765625),
+            array('9C3W9QC8+2V', 51.3701125, -1.232865625),
+            array('9C3W9QCW+2W', 51.3701125, -1.202665625),
+        );
+    }
 }
