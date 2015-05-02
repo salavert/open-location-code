@@ -11,7 +11,12 @@ class OpenLocationCode
 
     // The maximum value for longitude in degrees.
     const LONGITUDE_MAX_ = 180;
-    
+
+    // Maximum code length using lat/lng pair encoding. The area of such a
+    // code is approximately 13x13 meters (at the equator), and should be suitable
+    // for identifying buildings. This excludes prefix and separator characters.
+    const PAIR_CODE_LENGTH_ = 10;
+
     // A separator used to break the code into two parts to aid memorability.
     private $SEPARATOR_ = '+';
     
@@ -26,11 +31,6 @@ class OpenLocationCode
     
     // The base to use to convert numbers to/from.
     private $ENCODING_BASE_;
-    
-    // Maxiumum code length using lat/lng pair encoding. The area of such a
-    // code is approximately 13x13 meters (at the equator), and should be suitable
-    // for identifying buildings. This excludes prefix and separator characters.
-    private $PAIR_CODE_LENGTH_ = 10;
     
     // The resolution values in degrees for each position in the lat/lng pair
     // encoding. These give the place value of each position, and therefore the
@@ -195,7 +195,7 @@ class OpenLocationCode
     public function encode($latitude, $longitude, $codeLength = null)
     {
         if ($codeLength === null){
-            $codeLength = $this->PAIR_CODE_LENGTH_;
+            $codeLength = self::PAIR_CODE_LENGTH_;
         }
         if (($codeLength < 2) || ($codeLength < $this->SEPARATOR_POSITION_) && ($codeLength % 2 == 1)){
             throw new \Exception("IllegalArgumentException: Invalid Open Location Code length");
@@ -208,10 +208,10 @@ class OpenLocationCode
         if ($latitude == 90) {
             $latitude = $latitude - $this->computeLatitudePrecision($codeLength);
         }
-        $code = $this->encodePairs($latitude, $longitude, min($codeLength, $this->PAIR_CODE_LENGTH_));
+        $code = $this->encodePairs($latitude, $longitude, min($codeLength, self::PAIR_CODE_LENGTH_));
         // If the requested length indicates we want grid refined codes.
-        if ($codeLength > $this->PAIR_CODE_LENGTH_) {
-            $code .= $this->encodeGrid($latitude, $longitude, $codeLength - $this->PAIR_CODE_LENGTH_);
+        if ($codeLength > self::PAIR_CODE_LENGTH_) {
+            $code .= $this->encodeGrid($latitude, $longitude, $codeLength - self::PAIR_CODE_LENGTH_);
         }
         return $code;
     }
@@ -237,12 +237,12 @@ class OpenLocationCode
         $code = preg_replace('#'.$this->PADDING_CHARACTER_ . '+#', '', $code);
         $code = strtoupper($code);
         // Decode the lat/lng pair component.
-        $codeArea = $this->decodePairs(substr($code, 0, $this->PAIR_CODE_LENGTH_));
+        $codeArea = $this->decodePairs(substr($code, 0, self::PAIR_CODE_LENGTH_));
         // If there is a grid refinement component, decode that.
-        if (strlen($code) <= $this->PAIR_CODE_LENGTH_) {
+        if (strlen($code) <= self::PAIR_CODE_LENGTH_) {
             return $codeArea;
         }
-        $gridArea = $this->decodeGrid(substr($code, $this->PAIR_CODE_LENGTH_));
+        $gridArea = $this->decodeGrid(substr($code, self::PAIR_CODE_LENGTH_));
         return new CodeArea(
             $codeArea->latitudeLo + $gridArea->latitudeLo,
             $codeArea->longitudeLo + $gridArea->longitudeLo,
@@ -250,6 +250,94 @@ class OpenLocationCode
             $codeArea->longitudeLo + $gridArea->longitudeHi,
             $codeArea->codeLength + $gridArea->codeLength
         );
+    }
+
+    /**
+    Recover the nearest matching code to a specified location.
+    Given a short Open Location Code of between four and seven characters,
+    this recovers the nearest matching full code to the specified location.
+    The number of characters that will be prepended to the short code, depends
+    on the length of the short code and whether it starts with the separator.
+    If it starts with the separator, four characters will be prepended. If it
+    does not, the characters that will be prepended to the short code, where S
+    is the supplied short code and R are the computed characters, are as
+    follows:
+    SSSS    -> RRRR.RRSSSS
+    SSSSS   -> RRRR.RRSSSSS
+    SSSSSS  -> RRRR.SSSSSS
+    SSSSSSS -> RRRR.SSSSSSS
+    Note that short codes with an odd number of characters will have their
+    last character decoded using the grid refinement algorithm.
+    Args:
+    shortCode: A valid short OLC character sequence.
+    referenceLatitude: The latitude (in signed decimal degrees) to use to
+    find the nearest matching full code.
+    referenceLongitude: The longitude (in signed decimal degrees) to use
+    to find the nearest matching full code.
+    Returns:
+    The nearest full Open Location Code to the reference location that matches
+    the short code. Note that the returned code may not have the same
+    computed characters as the reference location. This is because it returns
+    the nearest match, not necessarily the match within the same cell. If the
+    passed code was not a valid short code, but was a valid full code, it is
+    returned unchanged.
+     */
+    /**
+     * @param string $shortCode
+     * @param int $referenceLatitude
+     * @param int $referenceLongitude
+     * @return float
+     * @throws \Exception
+     */
+    public function recoverNearest($shortCode, $referenceLatitude, $referenceLongitude)
+    {
+        if (!$this->isShort($shortCode)) {
+            if ($this->isFull($shortCode)) {
+                return $shortCode;
+            } else {
+                throw new \Exception("ValueError: Passed short code is not valid: $shortCode");
+            }
+        }
+        // Ensure that latitude and longitude are valid.
+        $referenceLatitude = $this->clipLatitude($referenceLatitude);
+        $referenceLongitude = $this->normalizeLongitude($referenceLongitude);
+        // Clean up the passed code.
+        $shortCode = strtoupper($shortCode);
+        // Compute the number of digits we need to recover.
+        $paddingLength = $this->SEPARATOR_POSITION_ - strpos($shortCode, $this->SEPARATOR_);
+        // The resolution (height and width) of the padded area in degrees.
+        $resolution = pow(20, 2 - ($paddingLength / 2));
+        // Distance from the center to an edge (in degrees).
+        $areaToEdge = $resolution / 2.0;
+
+        // Now round down the reference latitude and longitude to the resolution.
+        $roundedLatitude = floor($referenceLatitude / $resolution) * $resolution;
+        $roundedLongitude = floor($referenceLongitude / $resolution) * $resolution;
+
+        // Use the reference location to pad the supplied short code and decode it.
+        $codeArea = $this->decode(substr($this->encode($roundedLatitude, $roundedLongitude), 0, $paddingLength) . $shortCode);
+
+        // How many degrees latitude is the code from the reference? If it is more
+        // than half the resolution, we need to move it east or west.
+        $degreesDifference = $codeArea->latitudeCenter - $referenceLatitude;
+        if ($degreesDifference > $areaToEdge) {
+            // If the center of the short code is more than half a cell east,
+            // then the best match will be one position west.
+            $codeArea->latitudeCenter -= $resolution;
+        } else if ($degreesDifference < -$areaToEdge) {
+            // If the center of the short code is more than half a cell west,
+            // then the best match will be one position east.
+            $codeArea->latitudeCenter += $resolution;
+        }
+
+        // How many degrees longitude is the code from the reference?
+        $degreesDifference = $codeArea->longitudeCenter - $referenceLongitude;
+        if ($degreesDifference > $areaToEdge) {
+            $codeArea->longitudeCenter -= $resolution;
+        } else if ($degreesDifference < -$areaToEdge) {
+            $codeArea->longitudeCenter += $resolution;
+        }
+        return $this->encode($codeArea->latitudeCenter, $codeArea->longitudeCenter, $codeArea->codeLength);
     }
 
     /**

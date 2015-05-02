@@ -3,6 +3,7 @@
 namespace Salavert\Tests;
 
 use Salavert\OpenLocationCode;
+use Salavert\CodeArea;
 
 class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
 
@@ -86,11 +87,21 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($fullCode, $this->olc->encode($latitude,$longitude));
     }
 
+
+    /**
+     * @dataProvider shortCodes
+     */
+    public function testDecodeShortCodes($fullCode, $latitude, $longitude)
+    {
+        /* @todo Pending tests */
+    }
+
+
     public function shortCodes()
     {
         # Format: full code, lat, lng
         return array(
-            array('9C3W9QCJ+2V', 51.3701125, -1.217765625, '+2V'),
+            array('9C3W9QCJ+2V', 51.3701125, -1.217765625),
 
             # Adjust so we can't trim by 8 (+/- .000755)
             array('9C3W9QCJ+8V', 51.3708675, -1.217765625),
@@ -98,7 +109,7 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
             array('9C3W9QCJ+2H', 51.3701125, -1.218520625),
             array('9C3W9QCM+25', 51.3701125, -1.217010625),
 
-            ## Adjust so we can't trim by 6 (+/- .0151)
+            # Adjust so we can't trim by 6 (+/- .0151)
             array('9C3W9QPJ+3V', 51.3852125, -1.217765625),
             array('9C3W9Q4J+2V', 51.3550125, -1.217765625),
             array('9C3W9QC8+2V', 51.3701125, -1.232865625),
