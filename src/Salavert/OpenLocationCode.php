@@ -35,7 +35,7 @@ class OpenLocationCode
     // The resolution values in degrees for each position in the lat/lng pair
     // encoding. These give the place value of each position, and therefore the
     // dimensions of the resulting area.
-    private $PAIR_RESOLUTIONS_ = [20.0, 1.0, .05, .0025, .000125];
+    private $PAIR_RESOLUTIONS_ = array(20.0, 1.0, .05, .0025, .000125);
     
     // Number of columns in the grid refinement method.
     private $GRID_COLUMNS_ = 4;
@@ -284,8 +284,8 @@ class OpenLocationCode
      */
     /**
      * @param string $shortCode
-     * @param int $referenceLatitude
-     * @param int $referenceLongitude
+     * @param float $referenceLatitude
+     * @param float $referenceLongitude
      * @return float
      * @throws \Exception
      */
@@ -338,6 +338,55 @@ class OpenLocationCode
             $codeArea->longitudeCenter += $resolution;
         }
         return $this->encode($codeArea->latitudeCenter, $codeArea->longitudeCenter, $codeArea->codeLength);
+    }
+
+    /**
+     * Remove characters from the start of an OLC code.
+     * This uses a reference location to determine how many initial characters can be removed from the OLC code. The
+     * number of characters that can be removed depends on the distance between the code center and the reference
+     * location.
+     * The minimum number of characters that will be removed is four. If more than four characters can be removed, the
+     * additional characters will be replaced with the padding character. At most eight characters will be removed.
+     * The reference location must be within 50% of the maximum range. This ensures that the shortened code will be
+     * able to be recovered using slightly different locations.
+     *
+     * @param string $code A full, valid code to shorten.
+     * @param float $latitude A latitude, in signed decimal degrees, to use as the reference point.
+     * @param float $longitude A longitude, in signed decimal degrees, to use as the reference point.
+     * @return string Either the original code, if the reference location was not close enough, or the .
+     * @throws \Exception
+     */
+    public function shorten($code, $latitude, $longitude)
+    {
+        if (!$this->isFull($code)) {
+            throw new \Exception("ValueError: Passed code is not valid and full: $code");
+        }
+        if (strpos($code, $this->PADDING_CHARACTER_) !== false) {
+            throw new \Exception("ValueError: Cannot shorten padded codes: $code");
+        }
+        $code = strtoupper($code);
+        $codeArea = $this->decode($code);
+        if ($codeArea->codeLength < $this->MIN_TRIMMABLE_CODE_LEN_) {
+            throw new \Exception("ValueError: Code length must be at least " . $this->MIN_TRIMMABLE_CODE_LEN_);
+        }
+        // Ensure that latitude and longitude are valid.
+        $latitude = $this->clipLatitude($latitude);
+        $longitude = $this->normalizeLongitude($longitude);
+        // How close are the latitude and longitude to the code center.
+        $range = max(
+            abs($codeArea->latitudeCenter - $latitude),
+            abs($codeArea->longitudeCenter - $longitude)
+        );
+        for ($i = count($this->PAIR_RESOLUTIONS_) - 2; $i >= 1; $i--) {
+            // Check if we're close enough to shorten. The range must be less than 1/2
+            // the resolution to shorten at all, and we want to allow some safety, so
+            // use 0.3 instead of 0.5 as a multiplier.
+            if ($range < ($this->PAIR_RESOLUTIONS_[$i] * 0.3)) {
+                // Trim it.
+                return substr($code, ($i + 1) * 2);
+            }
+        }
+        return $code;
     }
 
     /**
