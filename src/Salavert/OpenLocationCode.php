@@ -5,6 +5,12 @@ namespace Salavert;
 class OpenLocationCode
 {
     private $OpenLocationCode = [];
+
+    // The maximum value for latitude in degrees.
+    const LATITUDE_MAX_ = 90;
+
+    // The maximum value for longitude in degrees.
+    const LONGITUDE_MAX_ = 180;
     
     // A separator used to break the code into two parts to aid memorability.
     private $SEPARATOR_ = '+';
@@ -20,12 +26,6 @@ class OpenLocationCode
     
     // The base to use to convert numbers to/from.
     private $ENCODING_BASE_;
-    
-    // The maximum value for latitude in degrees.
-    private $LATITUDE_MAX_ = 90;
-    
-    // The maximum value for longitude in degrees.
-    private $LONGITUDE_MAX_ = 180;
     
     // Maxiumum code length using lat/lng pair encoding. The area of such a
     // code is approximately 13x13 meters (at the equator), and should be suitable
@@ -64,9 +64,8 @@ class OpenLocationCode
 
     /**
      * Determines if a code is valid.
-     * To be valid, all characters must be from the Open Location Code character
-     * set with at most one separator. The separator can be in any even-numbered
-     * position up to the eighth digit.
+     * To be valid, all characters must be from the Open Location Code character set with at most one separator. The
+     * separator can be in any even-numbered position up to the eighth digit.
      *
      * @param string $code
      * @return bool
@@ -126,9 +125,8 @@ class OpenLocationCode
 
     /**
      * Determines if a code is a valid short code.
-     * A short Open Location Code is a sequence created by removing four or more
-     * digits from an Open Location Code. It must include a separator
-     * character.
+     * A short Open Location Code is a sequence created by removing four or more digits from an Open Location Code.
+     * It must include a separator character.
      *
      * @param string $code
      * @return bool
@@ -148,11 +146,13 @@ class OpenLocationCode
 
     /**
      * Determines if a code is a valid full Open Location Code.
-     * Not all possible combinations of Open Location Code characters decode to
-     * valid latitude and longitude values. This checks that a code is valid
-     * and also that the latitude and longitude values are legal. If the prefix
-     * character is present, it must be the first character. If the separator
-     * character is present, it must be after four characters.
+     * Not all possible combinations of Open Location Code characters decode to valid latitude and longitude values.
+     * This checks that a code is valid and also that the latitude and longitude values are legal. If the prefix
+     * character is present, it must be the first character. If the separator character is present, it must be after
+     * four characters.
+     *
+     * @param string $code
+     * @return bool
      */
     public function isFull($code)
     {
@@ -163,14 +163,14 @@ class OpenLocationCode
 
         // Work out what the first latitude character indicates for latitude.
         $firstLatValue = strpos($this->CODE_ALPHABET_, strtoupper($code[0])) * $this->ENCODING_BASE_;
-        if ($firstLatValue >= $this->LATITUDE_MAX_ * 2) {
+        if ($firstLatValue >= self::LATITUDE_MAX_ * 2) {
             // The code would decode to a latitude of >= 90 degrees.
             return false;
         }
         if (strlen($code) > 1) {
             // Work out what the first longitude character indicates for longitude.
             $firstLngValue = strpos($this->CODE_ALPHABET_, strtoupper($code[1])) * $this->ENCODING_BASE_;
-            if ($firstLngValue >= $this->LONGITUDE_MAX_ * 2) {
+            if ($firstLngValue >= self::LONGITUDE_MAX_ * 2) {
                 // The code would decode to a longitude of >= 180 degrees.
                 return false;
             }
@@ -214,6 +214,125 @@ class OpenLocationCode
             $code .= $this->encodeGrid($latitude, $longitude, $codeLength - $this->PAIR_CODE_LENGTH_);
         }
         return $code;
+    }
+
+    /**
+     * Decodes an Open Location Code into the location coordinates.
+     * Returns a CodeArea object that includes the coordinates of the bounding box - the lower left, center and upper
+     * right.
+     *
+     * @param string $code The Open Location Code to decode.
+     * @return CodeArea that provides the latitude and longitude of two of the corners of the area, the center, and the
+     * length of the original code.
+     * @throws \Exception
+     */
+    public function decode($code)
+    {
+        if (!$this->isFull($code)) {
+            throw new \Exception("IllegalArgumentException: Passed Open Location Code is not a valid full code: $code");
+        }
+        // Strip out separator character (we've already established the code is valid so the maximum is one), padding
+        // characters and convert to upper case.
+        $code = str_replace($this->SEPARATOR_, '', $code);
+        $code = preg_replace('#'.$this->PADDING_CHARACTER_ . '+#', '', $code);
+        $code = strtoupper($code);
+        // Decode the lat/lng pair component.
+        $codeArea = $this->decodePairs(substr($code, 0, $this->PAIR_CODE_LENGTH_));
+        // If there is a grid refinement component, decode that.
+        if (strlen($code) <= $this->PAIR_CODE_LENGTH_) {
+            return $codeArea;
+        }
+        $gridArea = $this->decodeGrid(substr($code, $this->PAIR_CODE_LENGTH_));
+        return new CodeArea(
+            $codeArea->latitudeLo + $gridArea->latitudeLo,
+            $codeArea->longitudeLo + $gridArea->longitudeLo,
+            $codeArea->latitudeLo + $gridArea->latitudeHi,
+            $codeArea->longitudeLo + $gridArea->longitudeHi,
+            $codeArea->codeLength + $gridArea->codeLength
+        );
+    }
+
+    /**
+     * Decode an OLC code made up of lat/lng pairs.
+     * This decodes an OLC code made up of alternating latitude and longitude characters, encoded using base 20.
+     *
+     * @param string $code A valid OLC code, presumed to be full, but with the separator removed.
+     * @return CodeArea
+     */
+    private function decodePairs($code)
+    {
+        // Get the latitude and longitude values. These will need correcting from positive ranges.
+        $latitude = $this->decodePairsSequence($code, 0);
+        $longitude = $this->decodePairsSequence($code, 1);
+        // Correct the values and set them into the CodeArea object.
+        return new CodeArea(
+            $latitude[0] - self::LATITUDE_MAX_,
+            $longitude[0] - self::LONGITUDE_MAX_,
+            $latitude[1] - self::LATITUDE_MAX_,
+            $longitude[1] - self::LONGITUDE_MAX_,
+            strlen($code)
+        );
+    }
+
+    /**
+     * Decode either a latitude or longitude sequence.
+     * This decodes the latitude or longitude sequence of a lat/lng pair encoding.
+     * Starting at the character at position offset, every second character is decoded and the value returned.
+     *
+     * @param string $code A valid OLC code, presumed to be full, with the separator removed.
+     * @param int $offset The character to start from.
+     * @return array A pair of the low and high values. The low value comes from decoding the characters. The high
+     * value is the low value plus the resolution of the last position. Both values are offset into positive ranges and
+     * will need to be corrected before use.
+     */
+    private function decodePairsSequence($code, $offset)
+    {
+        $i = 0;
+        $value = 0;
+        while ($i * 2 + $offset < strlen($code)) {
+            $value += strpos($this->CODE_ALPHABET_, $code[$i * 2 + $offset]) * $this->PAIR_RESOLUTIONS_[$i];
+            $i += 1;
+        }
+        return array(
+            $value,
+            $value + $this->PAIR_RESOLUTIONS_[$i - 1]
+        );
+    }
+
+    /**
+     * Decode the grid refinement portion of an OLC code.
+     * This decodes an OLC code using the grid refinement method.
+     *
+     * @param string $code A valid OLC code sequence that is only the grid refinement portion. This is the portion of a
+     * code starting at position 11.
+     * @return CodeArea
+     */
+    private function decodeGrid($code)
+    {
+        $latitudeLo = 0.0;
+        $longitudeLo = 0.0;
+        $latPlaceValue = $this->GRID_SIZE_DEGREES_;
+        $lngPlaceValue = $this->GRID_SIZE_DEGREES_;
+        $i = 0;
+        while ($i < strlen($code)) {
+            $codeIndex = strpos($this->CODE_ALPHABET_, $code[$i]);
+            $row = floor($codeIndex / $this->GRID_COLUMNS_);
+            $col = $codeIndex % $this->GRID_COLUMNS_;
+
+            $latPlaceValue /= $this->GRID_ROWS_;
+            $lngPlaceValue /= $this->GRID_COLUMNS_;
+
+            $latitudeLo += $row * $latPlaceValue;
+            $longitudeLo += $col * $lngPlaceValue;
+            $i += 1;
+        }
+        return new CodeArea(
+            $latitudeLo,
+            $longitudeLo,
+            $latitudeLo + $latPlaceValue,
+            $longitudeLo + $lngPlaceValue,
+            strlen($code)
+        );
     }
 
     /**
@@ -278,8 +397,8 @@ class OpenLocationCode
         $latPlaceValue = $this->GRID_SIZE_DEGREES_;
         $lngPlaceValue = $this->GRID_SIZE_DEGREES_;
         // Adjust latitude and longitude so they fall into positive ranges and get the offset for the required places.
-        $adjustedLatitude = ($latitude + $this->LATITUDE_MAX_) % $latPlaceValue;
-        $adjustedLongitude = ($longitude + $this->LONGITUDE_MAX_) % $lngPlaceValue;
+        $adjustedLatitude = ($latitude + self::LATITUDE_MAX_) % $latPlaceValue;
+        $adjustedLongitude = ($longitude + self::LONGITUDE_MAX_) % $lngPlaceValue;
         for ($i = 0; $i < $codeLength; $i++) {
             // Work out the row and column.
             $row = (int) floor($adjustedLatitude / ($latPlaceValue / $this->GRID_ROWS_));
@@ -309,8 +428,8 @@ class OpenLocationCode
     {
         $code = '';
         // Adjust latitude and longitude so they fall into positive ranges.
-        $adjustedLatitude = $latitude + $this->LATITUDE_MAX_;
-        $adjustedLongitude = $longitude + $this->LONGITUDE_MAX_;
+        $adjustedLatitude = $latitude + self::LATITUDE_MAX_;
+        $adjustedLongitude = $longitude + self::LONGITUDE_MAX_;
         // Count digits - can't use string length because it may include a separator character.
         $digitCount = 0;
         while ($digitCount < $codeLength) {
@@ -340,7 +459,6 @@ class OpenLocationCode
         if (strlen($code) == $this->SEPARATOR_POSITION_) {
             $code .= $this->SEPARATOR_;
         }
-        echo PHP_EOL.'$code '.$code;
         return $code;
     }
 }

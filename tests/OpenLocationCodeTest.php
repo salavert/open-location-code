@@ -80,7 +80,7 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
 
     public function testEncodeFullCode()
     {
-        $this->assertEquals('9C3W9QCJ+2VX', $this->olc->encode(51.3701125,-1.217765625));
+        $this->assertEquals('9C3W9QCJ+2V', $this->olc->encode(51.3701125,-1.217765625));
     }
 
 }
