@@ -7,7 +7,7 @@ http://openlocationcode.com
 
 Open Location Codes were developed at Google's Zurich engineering office, and then open sourced so that they can be freely used.
 
-This is port to PHP of this algorithm, licensed under Apache 2.0 license.
+This is a port to PHP of this algorithm, licensed under Apache 2.0 license.
 
 Usage
 -----
