@@ -4,8 +4,6 @@ namespace Salavert;
 
 class OpenLocationCode
 {
-    private $OpenLocationCode = [];
-
     // The maximum value for latitude in degrees.
     const LATITUDE_MAX_ = 90;
 
