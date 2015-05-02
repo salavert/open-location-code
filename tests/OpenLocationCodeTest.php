@@ -133,6 +133,7 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
             array('22222222+22', -89.9999375,-179.9999375,-90.0,-180.0,-89.999875,-179.999875),
             array('6VGX0000+', 0.5,179.5,0,179,1,180),
 
+            # @todo Check following cases
             # Special cases over 90 latitude and 180 longitude
             #array('CFX30000+', 90,1,89,1,90,2),
             #array('CFX30000+', 92,1,89,1,90,2),
