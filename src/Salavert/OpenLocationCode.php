@@ -253,40 +253,31 @@ class OpenLocationCode
     }
 
     /**
-    Recover the nearest matching code to a specified location.
-    Given a short Open Location Code of between four and seven characters,
-    this recovers the nearest matching full code to the specified location.
-    The number of characters that will be prepended to the short code, depends
-    on the length of the short code and whether it starts with the separator.
-    If it starts with the separator, four characters will be prepended. If it
-    does not, the characters that will be prepended to the short code, where S
-    is the supplied short code and R are the computed characters, are as
-    follows:
-    SSSS    -> RRRR.RRSSSS
-    SSSSS   -> RRRR.RRSSSSS
-    SSSSSS  -> RRRR.SSSSSS
-    SSSSSSS -> RRRR.SSSSSSS
-    Note that short codes with an odd number of characters will have their
-    last character decoded using the grid refinement algorithm.
-    Args:
-    shortCode: A valid short OLC character sequence.
-    referenceLatitude: The latitude (in signed decimal degrees) to use to
-    find the nearest matching full code.
-    referenceLongitude: The longitude (in signed decimal degrees) to use
-    to find the nearest matching full code.
-    Returns:
-    The nearest full Open Location Code to the reference location that matches
-    the short code. Note that the returned code may not have the same
-    computed characters as the reference location. This is because it returns
-    the nearest match, not necessarily the match within the same cell. If the
-    passed code was not a valid short code, but was a valid full code, it is
-    returned unchanged.
-     */
-    /**
-     * @param string $shortCode
-     * @param float $referenceLatitude
-     * @param float $referenceLongitude
-     * @return float
+     * Recover the nearest matching code to a specified location.
+     * Given a short Open Location Code of between four and seven characters,
+     * this recovers the nearest matching full code to the specified location.
+     * The number of characters that will be prepended to the short code, depends
+     * on the length of the short code and whether it starts with the separator.
+     * If it starts with the separator, four characters will be prepended. If it
+     * does not, the characters that will be prepended to the short code, where S
+     * is the supplied short code and R are the computed characters, are as
+     * follows:
+     * SSSS    -> RRRR.RRSSSS
+     * SSSSS   -> RRRR.RRSSSSS
+     * SSSSSS  -> RRRR.SSSSSS
+     * SSSSSSS -> RRRR.SSSSSSS
+     * Note that short codes with an odd number of characters will have their
+     * last character decoded using the grid refinement algorithm.
+     *
+     * @param string $shortCode A valid short OLC character sequence.
+     * @param float $referenceLatitude The latitude (in signed decimal degrees) to use to find the nearest matching
+     * full code.
+     * @param float $referenceLongitude The longitude (in signed decimal degrees) to use to find the nearest matching
+     * full code.
+     * @return float The nearest full Open Location Code to the reference location that matches the short code. Note
+     * that the returned code may not have the same computed characters as the reference location. This is because it
+     * returns the nearest match, not necessarily the match within the same cell. If the passed code was not a valid
+     * short code, but was a valid full code, it is returned unchanged
      * @throws \Exception
      */
     public function recoverNearest($shortCode, $referenceLatitude, $referenceLongitude)
