@@ -30,7 +30,7 @@ Update your composer.json
 
 ```json
 "require": {
-	"salavert/open-location-code": "~1.*"
+	"salavert/open-location-code": "1.*"
 }
 ```
 
