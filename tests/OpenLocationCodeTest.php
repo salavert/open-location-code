@@ -80,25 +80,44 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @dataProvider openLocationCodes
+     * @dataProvider openLocationCodesToEncode
+     */
+    public function testEncodeOLC($code, $lat, $lng)
+    {
+        $this->assertEquals($code, $this->olc->encode($lat, $lng));
+    }
+
+    public function openLocationCodesToEncode()
+    {
+        return array(
+            array('9C3W9QCJ+2V', 51.3701125, -1.217765625),
+            array('9C3W9QCJ+8V', 51.3708675, -1.217765625),
+            array('9C3W9Q9J+PV', 51.3693575, -1.217765625),
+            array('9C3W9QCJ+2H', 51.3701125, -1.218520625),
+            array('9C3W9QCM+25', 51.3701125, -1.217010625),
+            array('9C3W9QPJ+3V', 51.3852125, -1.217765625),
+            array('9C3W9Q4J+2V', 51.3550125, -1.217765625),
+            array('9C3W9QC8+2V', 51.3701125, -1.232865625),
+            array('9C3W9QCW+2W', 51.3701125, -1.202665625),
+        );
+    }
+
+
+    /**
+     * @dataProvider openLocationCodesToDecode
      */
     public function testDecodeOLC($code, $lat, $lng, $latLo, $lngLo, $latHi, $lngHi)
     {
         $codeArea = $this->olc->decode($code);
-        $this->assertEquals($latLo, $codeArea->latitudeLo);# 20.35
-        $this->assertEquals($lngLo, $codeArea->longitudeLo);# 2.75
-        $this->assertEquals($latHi, $codeArea->latitudeHi);# 20.4
-        $this->assertEquals($lngHi, $codeArea->longitudeHi);#2.8
-        $this->assertEquals($lat, $codeArea->latitudeCenter);#20.375
-        $this->assertEquals($lng, $codeArea->longitudeCenter);#2.775
+        $this->assertEquals($latLo, $codeArea->latitudeLo);
+        $this->assertEquals($lngLo, $codeArea->longitudeLo);
+        $this->assertEquals($latHi, $codeArea->latitudeHi);
+        $this->assertEquals($lngHi, $codeArea->longitudeHi);
+        $this->assertEquals($lat, $codeArea->latitudeCenter);
+        $this->assertEquals($lng, $codeArea->longitudeCenter);
     }
 
-    public function testDecodeShortCodes($fullCode, $latitude, $longitude)
-    {
-        /* @todo Pending tests */
-    }
-
-    public function openLocationCodes()
+    public function openLocationCodesToDecode()
     {
         # Format: code,lat,lng,latLo,lngLo,latHi,lngHi
         return array(
@@ -113,6 +132,12 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
             array('7FG40000+', 20.5,2.5,20.0,2.0,21.0,3.0),
             array('22222222+22', -89.9999375,-179.9999375,-90.0,-180.0,-89.999875,-179.999875),
             array('6VGX0000+', 0.5,179.5,0,179,1,180),
+
+            # Special cases over 90 latitude and 180 longitude
+            #array('CFX30000+', 90,1,89,1,90,2),
+            #array('CFX30000+', 92,1,89,1,90,2),
+            #array('62H20000+', 1,180,1,-180,2,-179),
+            #array('62H30000+', 1,181,1,-179,2,-178),
         );
     }
 
