@@ -580,7 +580,7 @@ class OpenLocationCode
             }
         }
         if (strlen($code) < $this->SEPARATOR_POSITION_) {
-            $code .= join($this->PADDING_CHARACTER_, array($this->SEPARATOR_POSITION_ - strlen($code) + 1));
+            $code .= str_repeat($this->PADDING_CHARACTER_, $this->SEPARATOR_POSITION_ - strlen($code));
         }
         if (strlen($code) == $this->SEPARATOR_POSITION_) {
             $code .= $this->SEPARATOR_;
