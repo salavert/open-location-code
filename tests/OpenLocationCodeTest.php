@@ -82,9 +82,9 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider openLocationCodesToEncode
      */
-    public function testEncodeOLC($code, $lat, $lng)
+    public function testEncodeOLC($code, $lat, $lng, $length = null)
     {
-        $this->assertEquals($code, $this->olc->encode($lat, $lng));
+        $this->assertEquals($code, $this->olc->encode($lat, $lng, $length));
     }
 
     public function openLocationCodesToEncode()
@@ -99,6 +99,9 @@ class OpenLocationCodeTest extends \PHPUnit_Framework_TestCase {
             array('9C3W9Q4J+2V', 51.3550125, -1.217765625),
             array('9C3W9QC8+2V', 51.3701125, -1.232865625),
             array('9C3W9QCW+2W', 51.3701125, -1.202665625),
+            // picked from https://github.com/google/open-location-code/blob/master/test_data/encodingTests.csv
+            array('4VCPPQGP+Q9', -41.2730625, 174.7859375),
+            array('62G20000+', 0.5, -179.5, 4),
         );
     }
 
