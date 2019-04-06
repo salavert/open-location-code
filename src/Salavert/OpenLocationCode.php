@@ -17,36 +17,36 @@ class OpenLocationCode
 
     // A separator used to break the code into two parts to aid memorability.
     private $SEPARATOR_ = '+';
-    
+
     // The number of characters to place before the separator.
     private $SEPARATOR_POSITION_ = 8;
-    
+
     // The character used to pad codes.
     private $PADDING_CHARACTER_ = '0';
-    
+
     // The character set used to encode the values.
     private $CODE_ALPHABET_ = '23456789CFGHJMPQRVWX';
-    
+
     // The base to use to convert numbers to/from.
     private $ENCODING_BASE_;
-    
+
     // The resolution values in degrees for each position in the lat/lng pair
     // encoding. These give the place value of each position, and therefore the
     // dimensions of the resulting area.
-    private $PAIR_RESOLUTIONS_ = array(20.0, 1.0, .05, .0025, .000125);
-    
+    private $PAIR_RESOLUTIONS_ = [20.0, 1.0, .05, .0025, .000125];
+
     // Number of columns in the grid refinement method.
     private $GRID_COLUMNS_ = 4;
-    
+
     // Number of rows in the grid refinement method.
     private $GRID_ROWS_ = 5;
-    
+
     // Size of the initial grid in degrees.
     private $GRID_SIZE_DEGREES_ = 0.000125;
-    
+
     // Minimum length of a code that can be shortened.
     private $MIN_TRIMMABLE_CODE_LEN_ = 6;
-    
+
     public function __construct()
     {
         $this->ENCODING_BASE_ = strlen($this->CODE_ALPHABET_);
@@ -419,10 +419,10 @@ class OpenLocationCode
             $value += strpos($this->CODE_ALPHABET_, $code[$i * 2 + $offset]) * $this->PAIR_RESOLUTIONS_[$i];
             $i += 1;
         }
-        return array(
+        return [
             $value,
             $value + $this->PAIR_RESOLUTIONS_[$i - 1]
-        );
+        ];
     }
 
     /**
